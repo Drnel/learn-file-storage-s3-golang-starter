@@ -46,6 +46,12 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	content_type := file_header.Header.Get("Content-Type")
+	if content_type != "image/jpeg" {
+		if content_type != "image/png" {
+			respondWithError(w, http.StatusInternalServerError, "file type error", errors.New("File type error"))
+			return
+		}
+	}
 	video, err := cfg.db.GetVideo(videoID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "db error", err)
