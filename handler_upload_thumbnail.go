@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -66,7 +68,14 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "error reading extension", err)
 		return
 	}
-	file_path := fmt.Sprintf("%v/%v%v", cfg.assetsRoot, videoID, file_extension[0])
+	file_name_slice := make([]byte, 32)
+	_, err = rand.Read(file_name_slice)
+	file_name := base64.RawURLEncoding.EncodeToString(file_name_slice)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Rand gen error", err)
+		return
+	}
+	file_path := fmt.Sprintf("%s/%s%s", cfg.assetsRoot, file_name, file_extension[0])
 	file, err := os.Create(file_path)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "file creation error", err)
@@ -77,7 +86,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "file write error", err)
 		return
 	}
-	thumbnail_url := fmt.Sprintf("http://localhost:8091/assets/%v%v", videoID, file_extension[0])
+	thumbnail_url := fmt.Sprintf("http://localhost:8091/assets/%s%s", file_name, file_extension[0])
 	video.ThumbnailURL = &thumbnail_url
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
